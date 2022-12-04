@@ -7,20 +7,31 @@ class Locking:
     self.transaction_table = [[] for i in range(10)]
     self.sequence = deque([])
     self.input_sequence = deque(input_sequence)
+    self.queue = deque([])
 
   
   def exclusive_lock(self, tx, item, type):
-    print(self.lock_table)
-    if item not in self.transaction_table[tx]:
-      self.transaction_table[tx].append(item)
     if item not in self.lock_table.keys():
       self.lock_table[item] = tx
+      print("Transaction " + str(tx) + " acquired exclusive lock on " + item)
       self.sequence.append({'tx': tx, 'item': item, 'type': 'xlock'})
+      print("Transaction " + str(tx) + " " + type + " " + item)
       self.sequence.append({'tx': tx, 'item': item, 'type': type})
+      if item not in self.transaction_table[tx]:
+        self.transaction_table[tx].append(item)
+      return True
     else:
-      print(self.lock_table)
-      print("Transaction " + str(tx) + " failed. Item " + str(item) + " is locked by " + str(self.lock_table[item]) + ". Rolling back..")
-      self.rollback(tx)
+      print("Transaction " + str(tx) + " failed. Item " + str(item) + " is locked by " + str(self.lock_table[item]) + ".", end = " ")
+      if self.transaction_table[tx] != []:
+        print("Rolling back transaction " + str(tx) + ".")
+        self.sequence.append({'tx': tx, 'item': item, 'type': type})
+        self.rollback(tx)
+      else:
+        print("Adding transaction " + str(tx) + " to queue.")
+        self.queue.append({'tx': tx, 'item': item, 'type': type})
+        # self.input_sequence.append({'tx': tx, 'item': item, 'type': type})
+      return False
+
   
   def release_lock(self, tx, item):
     if ((item, tx) in self.lock_table.items()):
@@ -38,7 +49,7 @@ class Locking:
       self.release_lock(tx, item)
     tx_sequence = []
     for i in range(len(self.sequence)):
-      if self.sequence[i]['tx'] == tx:
+      if self.sequence[i]['tx'] == tx and self.sequence[i]['type'] != 'aborted' and self.sequence[i]['type'] != 'xlock':
         tx_sequence.append(self.sequence[i])
     for i in range(len(self.input_sequence)):
       if self.input_sequence[i]['tx'] == tx:
@@ -67,21 +78,25 @@ class Locking:
 
   def run(self):
     while len(self.input_sequence) > 0:
+      status = True
+      flag = True
+      if len(self.queue) > 0:
+        if self.queue[0]['item'] not in self.lock_table.keys():
+          self.input_sequence.appendleft(self.queue.popleft())
       item = self.input_sequence.popleft()
-      print(item)
       if item['item'] in self.lock_table.keys():
         if item['tx'] == self.lock_table[item['item']]:
           self.sequence.append(item)
+          print("Transaction " + str(item['tx']) + " " + item['type'] + " " + item['item'])
         else:
-          self.exclusive_lock(item['tx'], item['item'], item['type'])
+          status = self.exclusive_lock(item['tx'], item['item'], item['type'])
       else:
-        self.exclusive_lock(item['tx'], item['item'], item['type'])
-      flag = False
+        status = self.exclusive_lock(item['tx'], item['item'], item['type'])
       for i in range(len(self.input_sequence)):
         if self.input_sequence[i]['tx'] == item['tx']:
-          flag = True
+          flag = False
           break
-      if not flag:
+      if flag and status:
         self.commit(item['tx'])
       
       # elif item['type'] == 'commit':
