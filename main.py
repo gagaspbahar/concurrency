@@ -29,7 +29,6 @@ class Locking:
       else:
         print("Adding transaction " + str(tx) + " to queue.")
         self.queue.append({'tx': tx, 'item': item, 'type': type})
-        # self.input_sequence.append({'tx': tx, 'item': item, 'type': type})
       return False
 
   
@@ -98,7 +97,6 @@ class Locking:
           break
       if flag and status:
         self.commit(item['tx'])
-      
       # elif item['type'] == 'commit':
       #   self.sequence.append(item)
       #   self.commit(item['tx'])
