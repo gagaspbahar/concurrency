@@ -57,7 +57,7 @@ class MVCC:
         if item not in self.version_table.keys():
             self.version_table[item] = []
             self.version_table[item].append({'tx': tx, 'timestamp': (
-                self.transaction_counter[tx], self.transaction_counter[tx]), 'version': 0})
+                self.transaction_counter[tx], self.transaction_counter[tx]), 'version': self.transaction_counter[tx]})
             self.sequence.append({'tx': tx, 'item': item, 'action': 'write', 'timestamp': (
                 self.transaction_counter[tx], self.transaction_counter[tx]), 'version': self.transaction_counter[tx]})
             print("Transaction " + str(tx) + " wrote " + item + " at version " + str(self.transaction_counter[tx]) +
