@@ -3,7 +3,6 @@ from collections import deque
 class MVCC:
     def __init__(self, input_sequence):
         self.version_table = {}
-        self.transaction_table = [[] for i in range(10)]
         self.sequence = deque([])
         self.input_sequence = deque(input_sequence)
         self.counter = 0
@@ -123,10 +122,8 @@ class MVCC:
             current = self.input_sequence.popleft()
             if current['action'] == 'read':
                 self.read(current['tx'], current['item'])
-                self.transaction_table[current['tx']].append(current['item'])
             elif current['action'] == 'write':
                 self.write(current['tx'], current['item'])
-                self.transaction_table[current['tx']].append(current['item'])
             else:
                 print("Invalid action.")
 
