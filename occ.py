@@ -49,27 +49,30 @@ class OCC:
         return parsed_sequence
 
     def read(self, cmd):
+        self.current_timestamp += 1
         # baca data dari database (tidak diimplementasikan di tugas ini)
-        print("Transaction", cmd["tx"], "read", cmd["item"], "from DB")
+        tx_num = cmd["tx"]
+        tx_item = cmd["item"]
         # tambahkan ke read_set tx
         if cmd["item"] not in self.transactions[cmd["tx"]].read_set:
             self.transactions[cmd["tx"]].read_set.append(cmd["item"])
-            print(" ", cmd["item"], "has been added to the READ SET of transaction", cmd["tx"])
-        print(" ","--READ SET transaction", cmd["tx"], "=", self.transactions[cmd["tx"]].read_set)
+        read_set = self.transactions[cmd["tx"]].read_set
+        print(f"[READ]      T{tx_num} on {tx_item} from DB | READ_SET:{read_set}")
         
 
     def temporal_write(self, cmd):
+        self.current_timestamp += 1
         # tulis data ke local variable  
+        tx_num = cmd["tx"]
+        tx_item = cmd["item"]
         self.local_vars[cmd["item"]] = WRITE_DATA_PLACEHOLDER
-        print("Transaction", cmd["tx"], "temporary write", cmd["item"], "to LOCAL VARIABLE")
         # tambahkan ke write_set tx
         if cmd["item"] not in self.transactions[cmd["tx"]].write_set:
             self.transactions[cmd["tx"]].write_set.append(cmd["item"])
-            print(" ",cmd["item"], "has been added to the WRITE SET of transaction", cmd["tx"])
-        print(" ","--WRITE SET transaction", cmd["tx"], "=", self.transactions[cmd["tx"]].write_set)
-        
-
+        write_set = self.transactions[cmd["tx"]].write_set
+        print(f"[TEMPWRITE] T{tx_num} on {tx_item} to LOCAL VAR | WRITE_SET:{write_set}")
     def validate(self, cmd):
+        self.current_timestamp += 1
         tx_num = cmd["tx"]
         self.transactions[tx_num].timestamps["validation"] = self.current_timestamp
         is_valid = True
@@ -77,8 +80,8 @@ class OCC:
             if current_tx_num != tx_num:
                 ti_validation_timestamp = self.transactions[current_tx_num].timestamps["validation"]
                 ti_finish_timestamp = self.transactions[current_tx_num].timestamps["finish"]
-                tj_start_timestamp = self.transactions[current_tx_num].timestamps["start"]
-                tj_validation_timestamp = self.transactions[current_tx_num].timestamps["validation"]
+                tj_start_timestamp = self.transactions[tx_num].timestamps["start"]
+                tj_validation_timestamp = self.transactions[tx_num].timestamps["validation"]
                 if ti_validation_timestamp < tj_validation_timestamp:
                     if ti_finish_timestamp < tj_start_timestamp:
                         pass
@@ -101,23 +104,27 @@ class OCC:
         else:
             # fill rollback list
             self.rolledback_transaction_nums.append(tx_num)
-            print(f"Transaction {tx_num} rollback")
+            print(f"[ABORT]     T{tx_num} rolled back")
                 
         
     def write(self, tx_num):
+        self.current_timestamp += 1
         tx = self.transactions[tx_num]
         for var in tx.write_set:
             written_data = self.local_vars[var]
-            print(f"Transaction {tx_num} write {var} = {written_data} to DB")
+            print(f"[WRITE]     T{tx_num} on {var} = {written_data} to DB")
+
 
         self.commit(tx_num)
     
     def commit(self, tx_num):
-        print(f"Transaction {tx_num} commited")
+        self.current_timestamp += 1
         self.transactions[tx_num].timestamps["finish"] = self.current_timestamp
+        print(f"[COMMIT]    T{tx_num}")
     
     def rollback_all(self):
         while(len(self.rolledback_transaction_nums) > 0):
+            self.current_timestamp += 1
             rolledback_tx_num = self.rolledback_transaction_nums.pop(0)
             rolledback_tx = self.transactions[rolledback_tx_num]
             # reset transaction parameters
