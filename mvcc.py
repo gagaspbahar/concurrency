@@ -10,7 +10,7 @@ class MVCC:
         # default counter: i
         self.transaction_counter = [i for i in range(10)]
 
-    def getMaxVersionIndexByRead(self, item):
+    def getMaxVersionIndexByWrite(self, item):
         max_w_timestamp = self.version_table[item][0]['timestamp'][1]
         max_index = 0
         for i in range(len(self.version_table[item])):
@@ -24,13 +24,13 @@ class MVCC:
             if (('tx', tx) not in self.version_table.items()):
                 self.version_table[item] = []
                 self.version_table[item].append({'tx': tx, 'timestamp': (
-                    self.transaction_counter[tx], 0), 'version': self.transaction_counter[tx]})
+                    self.transaction_counter[tx], 0), 'version': 0})
                 self.sequence.append({'tx': tx, 'item': item, 'action': 'read', 'timestamp': (
                     self.transaction_counter[tx], 0), 'version': 0})
                 print("Transaction " + str(tx) + " read " + item + " at version 0" + ". Timestamp " + item + " now: (" + str(self.transaction_counter[tx]) + ", " + str(0) + ").")
                 self.counter += 1
             else:
-                max_index = self.getMaxVersionIndexByRead(item)
+                max_index = self.getMaxVersionIndexByWrite(item)
                 max_w_timestamp = self.version_table[item][max_index]['timestamp'][1]
                 max_r_timestamp = self.version_table[item][max_index]['timestamp'][0]
                 max_version = self.version_table[item][max_index]['version']
@@ -42,7 +42,7 @@ class MVCC:
                       ". Timestamp " + item + " now: " + str(self.version_table[item][max_index]['timestamp']) + ".")
                 self.counter += 1
         else:
-            max_index = self.getMaxVersionIndexByRead(item)
+            max_index = self.getMaxVersionIndexByWrite(item)
             max_w_timestamp = self.version_table[item][max_index]['timestamp'][1]
             max_r_timestamp = self.version_table[item][max_index]['timestamp'][0]
             max_version = self.version_table[item][max_index]['version']
@@ -65,7 +65,7 @@ class MVCC:
                   ". Timestamp " + item + " now: (" + str(self.transaction_counter[tx]) + ", " + str(self.transaction_counter[tx]) + ").")
             self.counter += 1
         else:
-            max_index = self.getMaxVersionIndexByRead(item)
+            max_index = self.getMaxVersionIndexByWrite(item)
             max_w_timestamp = self.version_table[item][max_index]['timestamp'][1]
             max_r_timestamp = self.version_table[item][max_index]['timestamp'][0]
             max_version = self.version_table[item][max_index]['version']
@@ -106,7 +106,7 @@ class MVCC:
             self.input_sequence.append(tx_sequence[i])
         self.sequence.append({'tx': tx, 'item': None, 'action': 'rollback'})
         self.transaction_counter[tx] = self.counter
-        print("Transaction " + str(tx) + " rolled back.")
+        print("Transaction " + str(tx) + " rolled back. Assigned new timestamp: " + str(self.transaction_counter[tx]) + ".")
 
     def print_sequence(self):
         for i in range(len(self.sequence)):
