@@ -123,3 +123,7 @@ for input in input_list:
 
 locking = Locking(sequence)
 locking.run()
+
+
+# R1(A);R2(B);W1(A);R1(B);W3(A);W4(B);W2(B);R1(C)
+# R1(X); R2(Y); R1(Y)
